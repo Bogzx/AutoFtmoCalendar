@@ -37,7 +37,6 @@ KEYWORDS = ['maintenance', 'crypto market is closed', 'ctrader']
 ```
 git clone https://github.com/Bogzx/AutoFtmoCalendar
 cd AutoFtmoCalendar
-
 ```
 
 ### 3. Install Dependencies
@@ -76,4 +75,24 @@ You only need to do this once.
 
 ### 6. First Run & Authorization
 
-The first time you run the script, it will open a
+The first time you run the script, it will open a browser window to ask for permission to access your Google Calendar.
+
+```
+python main.py
+
+```
+
+After you grant permission, a `token.json` file will be created. This will keep you logged in for future runs.
+
+## Usage
+
+To run the script manually, simply execute the `main.py` file.
+
+```
+python main.py
+
+```
+
+For automated daily checks, you can set up a cron job on a Linux server.
+
+ *This is a personal project and is not affiliated with FTMO.* O
