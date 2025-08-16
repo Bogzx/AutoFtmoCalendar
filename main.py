@@ -6,6 +6,7 @@ import os
 import json
 import google.generativeai as genai
 from dotenv import load_dotenv
+from dateutil.parser import parse as date_parse
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -24,42 +25,29 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 FTMO_URL = 'https://ftmo.com/en/trading-updates/'
 KEYWORDS = ['maintenance', 'crypto market is closed', 'ctrader']
+EVENT_SUMMARY = 'cTrader Maintenance/Crypto Market Closure'
+CALENDAR_NAME = 'Trading' # The name of the sub-calendar to use
 
 class FTMOScraper:
     """
     Scrapes the FTMO trading updates page for relevant information using BeautifulSoup.
     """
     def __init__(self, url):
-        """
-        Initializes the scraper with the URL to scrape.
-        Args:
-            url (str): The URL of the FTMO trading updates page.
-        """
         self.url = url
 
     def get_latest_update(self):
-        """
-        Fetches the latest trading update from the FTMO website.
-        Returns:
-            str: The text content of the latest trading update, or None if an error occurs.
-        """
         try:
-            # Using headers to mimic a real browser visit
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
             response = requests.get(self.url, headers=headers)
-            response.raise_for_status()  # Raise an exception for bad status codes
+            response.raise_for_status()
             soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # This selector is confirmed to be correct based on the site's HTML structure.
             latest_update_container = soup.find('div', class_='trup-primary')
-            
             if latest_update_container:
-                # Use separator=' ' and strip=True to get clean, space-separated text
                 return latest_update_container.get_text(separator=' ', strip=True)
             else:
-                print("Error: Could not find the trading update container (div with class 'trup-primary'). The website structure may have changed.")
+                print("Error: Could not find the trading update container (div with class 'trup-primary').")
                 return None
         except requests.exceptions.RequestException as e:
             print(f"Error fetching the URL: {e}")
@@ -70,33 +58,25 @@ class GeminiEventParser:
     Uses the Gemini AI to parse event details from text.
     """
     def __init__(self, api_key):
-        """
-        Initializes the parser and configures the Gemini API.
-        Args:
-            api_key (str): Your Google Gemini API key.
-        """
         genai.configure(api_key=api_key)
-        # CORRECTED: Updated to a current and stable model name.
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-pro')
 
     def parse_event_details(self, text):
         """
-        Sends the text to the Gemini API to extract start and end times.
-        Args:
-            text (str): The text of the trading update.
+        Sends text to the Gemini API to extract a list of event start and end times.
         Returns:
-            tuple: A tuple containing the start_time and end_time (as datetime objects), or (None, None).
+            list: A list of tuples, where each tuple contains (start_time, end_time) as datetime objects.
         """
         prompt = f"""
-        Analyze the following text from a trading update. Your task is to identify any scheduled maintenance or market closure related to cTrader or cryptocurrencies.
+        Analyze the following text from a trading update. Your task is to identify all scheduled maintenance or market closures related to cTrader or cryptocurrencies.
 
-        If you find such an event, extract the exact start date and time, and the end date and time.
+        If you find one or more events, extract the exact start date/time and end date/time for each.
         The text explicitly states times are in "GMT+3". Please ensure your output reflects this.
         
-        Provide the output ONLY as a single, minified JSON object with keys "start_time" and "end_time".
+        Provide the output ONLY as a single, minified JSON array of objects. Each object must have "start_time" and "end_time" keys.
         The values should be in the ISO 8601 format (YYYY-MM-DDTHH:MM:SS).
 
-        If no specific event date and time is found in the text, return a JSON object with null values for both keys.
+        If no events are found, return an empty array [].
 
         Text to analyze:
         ---
@@ -105,100 +85,133 @@ class GeminiEventParser:
         """
         try:
             response = self.model.generate_content(prompt)
-            # The model is instructed to return only JSON, making it easier to parse.
-            details = json.loads(response.text)
+            event_list = json.loads(response.text)
+            parsed_events = []
             
-            start_time_str = details.get("start_time")
-            end_time_str = details.get("end_time")
+            if not isinstance(event_list, list):
+                print("AI response was not a list as expected.")
+                return []
 
-            if start_time_str and end_time_str:
-                start_time = datetime.datetime.fromisoformat(start_time_str)
-                end_time = datetime.datetime.fromisoformat(end_time_str)
-                print(f"AI identified event start: {start_time}, end: {end_time}")
-                return start_time, end_time
+            for event in event_list:
+                start_str = event.get("start_time")
+                end_str = event.get("end_time")
+                if start_str and end_str:
+                    # The AI returns a naive datetime string, which we parse.
+                    start_time = datetime.datetime.fromisoformat(start_str)
+                    end_time = datetime.datetime.fromisoformat(end_str)
+                    parsed_events.append((start_time, end_time))
+            
+            if parsed_events:
+                 print(f"AI identified {len(parsed_events)} event(s).")
             else:
-                print("AI did not find a specific event time in the text.")
-                return None, None
+                print("AI did not find any specific event times in the text.")
+
+            return parsed_events
         except (json.JSONDecodeError, ValueError, TypeError, Exception) as e:
             print(f"An error occurred while parsing the AI response: {e}")
             print(f"Raw AI response was: {response.text if 'response' in locals() else 'No response from AI.'}")
-            return None, None
-
+            return []
 
 class GoogleCalendarManager:
     """
     Manages events on a Google Calendar.
     """
     def __init__(self, credentials_file='credentials.json', token_file='token.json'):
-        """
-        Initializes the GoogleCalendarManager and handles authentication.
-        Args:
-            credentials_file (str): The path to the credentials.json file.
-            token_file (str): The path to the token.json file.
-        """
         self.creds = None
         if os.path.exists(token_file):
             self.creds = Credentials.from_authorized_user_file(token_file, SCOPES)
-        # If there are no (valid) credentials available, let the user log in.
         if not self.creds or not self.creds.valid:
             if self.creds and self.creds.expired and self.creds.refresh_token:
                 self.creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    credentials_file, SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(credentials_file, SCOPES)
                 self.creds = flow.run_local_server(port=0)
-            # Save the credentials for the next run
             with open(token_file, 'w') as token:
                 token.write(self.creds.to_json())
+        self.service = build('calendar', 'v3', credentials=self.creds)
+        self.calendar_id = self._get_or_create_calendar_by_name(CALENDAR_NAME)
+
+    def _get_or_create_calendar_by_name(self, calendar_name):
+        """
+        Checks if a calendar exists. If not, creates it.
+        Returns:
+            str: The ID of the calendar.
+        """
+        try:
+            print(f"Checking for calendar named '{calendar_name}'...")
+            calendar_list = self.service.calendarList().list().execute()
+            for calendar_list_entry in calendar_list.get('items', []):
+                if calendar_list_entry['summary'] == calendar_name:
+                    print(f"Found existing calendar.")
+                    return calendar_list_entry['id']
+            
+            print(f"Calendar not found. Creating a new one...")
+            calendar_body = {
+                'summary': calendar_name,
+                'timeZone': 'Etc/GMT-3'
+            }
+            created_calendar = self.service.calendars().insert(body=calendar_body).execute()
+            print(f"Successfully created calendar '{calendar_name}'.")
+            return created_calendar['id']
+        except HttpError as error:
+            print(f"An error occurred with the calendar list: {error}")
+            return 'primary'
+
+    def get_upcoming_events(self):
+        """
+        Fetches events for the next 7 days from the specific calendar to check for duplicates.
+        """
+        now = datetime.datetime.utcnow()
+        time_min = now.isoformat() + 'Z'
+        time_max = (now + datetime.timedelta(days=7)).isoformat() + 'Z'
+        
+        try:
+            events_result = self.service.events().list(
+                calendarId=self.calendar_id, 
+                timeMin=time_min,
+                timeMax=time_max,
+                singleEvents=True,
+                orderBy='startTime'
+            ).execute()
+            events = events_result.get('items', [])
+            
+            existing_events = set()
+            for event in events:
+                start = event['start'].get('dateTime', event['start'].get('date'))
+                # CORRECTED: Parse the full timezone-aware string from Google Calendar.
+                start_dt = date_parse(start)
+                existing_events.add((event['summary'], start_dt))
+            return existing_events
+        except HttpError as error:
+            print(f"An error occurred while fetching calendar events: {error}")
+            return set()
 
     def create_event(self, summary, description, start_time, end_time):
         """
-        Creates an event on the user's primary calendar.
-        Args:
-            summary (str): The title of the event.
-            description (str): The description of the event.
-            start_time (datetime.datetime): The start time of the event.
-            end_time (datetime.datetime): The end time of the event.
+        Creates an event on the specified calendar.
         """
         try:
-            service = build('calendar', 'v3', credentials=self.creds)
             event = {
                 'summary': summary,
                 'description': description,
-                'start': {
-                    'dateTime': start_time.isoformat(),
-                    'timeZone': 'Etc/GMT-3', # Explicitly using GMT+3 as mentioned on the site
-                },
-                'end': {
-                    'dateTime': end_time.isoformat(),
-                    'timeZone': 'Etc/GMT-3', # Explicitly using GMT+3
-                },
+                'start': {'dateTime': start_time.isoformat(), 'timeZone': 'Etc/GMT-3'},
+                'end': {'dateTime': end_time.isoformat(), 'timeZone': 'Etc/GMT-3'},
             }
-            event = service.events().insert(calendarId='primary', body=event).execute()
-            print(f"Event created successfully: {event.get('htmlLink')}")
+            created_event = self.service.events().insert(calendarId=self.calendar_id, body=event).execute()
+            print(f"Event created successfully: {created_event.get('htmlLink')}")
         except HttpError as error:
             print(f'An error occurred while creating the calendar event: {error}')
 
 class TradingUpdateScheduler:
     """
-    Orchestrates the process of scraping for updates and scheduling them on Google Calendar.
+    Orchestrates scraping, parsing, and scheduling.
     """
     def __init__(self, scraper, calendar_manager, parser):
-        """
-        Initializes the scheduler.
-        Args:
-            scraper (FTMOScraper): An instance of the FTMOScraper.
-            calendar_manager (GoogleCalendarManager): An instance of the GoogleCalendarManager.
-            parser (GeminiEventParser): An instance of the GeminiEventParser.
-        """
         self.scraper = scraper
         self.calendar_manager = calendar_manager
         self.parser = parser
 
     def run(self):
-        """
-        Executes the full process of scraping, parsing, and scheduling.
-        """
         print(f"--- Running FTMO Update Check: {datetime.datetime.now()} ---")
         latest_update_text = self.scraper.get_latest_update()
         
@@ -208,36 +221,50 @@ class TradingUpdateScheduler:
 
         if any(keyword in latest_update_text.lower() for keyword in KEYWORDS):
             print("Relevant update found. Parsing details with AI...")
-            start_time, end_time = self.parser.parse_event_details(latest_update_text)
+            parsed_events = self.parser.parse_event_details(latest_update_text)
 
-            if start_time and end_time:
-                self.calendar_manager.create_event(
-                    summary='cTrader Maintenance/Crypto Market Closure',
-                    description=latest_update_text,
-                    start_time=start_time,
-                    end_time=end_time
-                )
-            else:
-                print("Could not create event as AI did not return specific times.")
+            if not parsed_events:
+                print("No events to schedule.")
+                return
+            
+            print("Checking for duplicate events in calendar...")
+            existing_events = self.calendar_manager.get_upcoming_events()
+            
+            # Define the GMT+3 timezone to make our parsed times aware
+            gmt_plus_3 = datetime.timezone(datetime.timedelta(hours=3))
+
+            for start_time, end_time in parsed_events:
+                # CORRECTED: Make the naive datetime from the AI timezone-aware.
+                aware_start_time = start_time.replace(tzinfo=gmt_plus_3)
+                aware_end_time = end_time.replace(tzinfo=gmt_plus_3)
+                
+                event_tuple = (EVENT_SUMMARY, aware_start_time)
+
+                if event_tuple in existing_events:
+                    print(f"Skipping duplicate event: '{EVENT_SUMMARY}' at {start_time}")
+                else:
+                    print(f"Found new event to schedule: '{EVENT_SUMMARY}' at {start_time}")
+                    self.calendar_manager.create_event(
+                        summary=EVENT_SUMMARY,
+                        description=latest_update_text,
+                        start_time=aware_start_time,
+                        end_time=aware_end_time
+                    )
         else:
             print("No relevant updates found containing the specified keywords.")
         
         print("--- Check Finished ---")
-
 
 if __name__ == '__main__':
     if not GEMINI_API_KEY:
         print("FATAL ERROR: GEMINI_API_KEY not found. Please create a .env file and add your key.")
     else:
         try:
-            # Initialize components
             ftmo_scraper = FTMOScraper(FTMO_URL)
             gcal_manager = GoogleCalendarManager()
             gemini_parser = GeminiEventParser(api_key=GEMINI_API_KEY)
             
-            # Initialize and run the main scheduler
             scheduler = TradingUpdateScheduler(ftmo_scraper, gcal_manager, gemini_parser)
             scheduler.run()
-
         except Exception as e:
             print(f"An unexpected error occurred during execution: {e}")
