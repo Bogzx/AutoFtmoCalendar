@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import datetime
 import os
 import json
+import re
 import google.generativeai as genai
 from dotenv import load_dotenv
 from dateutil.parser import parse as date_parse
@@ -85,7 +86,11 @@ class GeminiEventParser:
         """
         try:
             response = self.model.generate_content(prompt)
-            event_list = json.loads(response.text)
+            
+            # CORRECTED: Clean the response to remove markdown code blocks before parsing.
+            clean_text = re.sub(r'```(json)?', '', response.text).strip()
+
+            event_list = json.loads(clean_text)
             parsed_events = []
             
             if not isinstance(event_list, list):
@@ -96,7 +101,6 @@ class GeminiEventParser:
                 start_str = event.get("start_time")
                 end_str = event.get("end_time")
                 if start_str and end_str:
-                    # The AI returns a naive datetime string, which we parse.
                     start_time = datetime.datetime.fromisoformat(start_str)
                     end_time = datetime.datetime.fromisoformat(end_str)
                     parsed_events.append((start_time, end_time))
@@ -178,7 +182,6 @@ class GoogleCalendarManager:
             existing_events = set()
             for event in events:
                 start = event['start'].get('dateTime', event['start'].get('date'))
-                # CORRECTED: Parse the full timezone-aware string from Google Calendar.
                 start_dt = date_parse(start)
                 existing_events.add((event['summary'], start_dt))
             return existing_events
@@ -230,11 +233,9 @@ class TradingUpdateScheduler:
             print("Checking for duplicate events in calendar...")
             existing_events = self.calendar_manager.get_upcoming_events()
             
-            # Define the GMT+3 timezone to make our parsed times aware
             gmt_plus_3 = datetime.timezone(datetime.timedelta(hours=3))
 
             for start_time, end_time in parsed_events:
-                # CORRECTED: Make the naive datetime from the AI timezone-aware.
                 aware_start_time = start_time.replace(tzinfo=gmt_plus_3)
                 aware_end_time = end_time.replace(tzinfo=gmt_plus_3)
                 
