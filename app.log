@@ -1,0 +1,278 @@
+2025-11-29 20:33:00,691 - CRITICAL - An unexpected error occurred during execution: ('invalid_grant: Bad Request', {'error': 'invalid_grant', 'error_description': 'Bad Request'})
+Traceback (most recent call last):
+  File "C:\Users\Administrator\Documents\GitHub\AutoFtmoCalendar\main.py", line 321, in <module>
+    gcal_manager = GoogleCalendarManager()
+  File "C:\Users\Administrator\Documents\GitHub\AutoFtmoCalendar\main.py", line 164, in __init__
+    self.creds.refresh(Request())
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\google\oauth2\credentials.py", line 409, in refresh
+    ) = reauth.refresh_grant(
+        ~~~~~~~~~~~~~~~~~~~~^
+        request,
+        ^^^^^^^^
+    ...<6 lines>...
+        enable_reauth_refresh=self._enable_reauth_refresh,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\google\oauth2\reauth.py", line 366, in refresh_grant
+    _client._handle_error_response(response_data, retryable_error)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrator\AppData\Local\Programs\Python\Python313\Lib\site-packages\google\oauth2\_client.py", line 69, in _handle_error_response
+    raise exceptions.RefreshError(
+        error_details, response_data, retryable=retryable_error
+    )
+google.auth.exceptions.RefreshError: ('invalid_grant: Bad Request', {'error': 'invalid_grant', 'error_description': 'Bad Request'})
+2025-11-29 20:36:00,059 - WARNING - Token refresh failed (likely expired or revoked). Initiating new login flow.
+2025-11-29 20:36:10,472 - INFO - "GET /?state=gWWBHuxjd0HneAUlqjwFzz49Xlp3fD&code=4/0Ab32j92xXiAsfCVhYODcTmOLzieeRdqLO_NuI9Bh3JeCYshzcPjO14GUGDzT5IAfppUQyw&scope=https://www.googleapis.com/auth/calendar HTTP/1.1" 200 65
+2025-11-29 20:36:10,683 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-11-29 20:36:10,690 - INFO - Checking for calendar named 'Trading'...
+2025-11-29 20:36:11,404 - INFO - Found existing calendar.
+2025-11-29 20:36:11,404 - INFO - --- Running FTMO Update Check ---
+2025-11-29 20:36:11,615 - INFO - Relevant update found. Parsing details with AI...
+2025-11-29 20:36:11,795 - WARNING - Attempt 1/3 failed for parse_event_details: 429 Quota exceeded for quota metric 'Generate Content API requests per minute' and limit 'GenerateContent request limit per minute for a region' of service 'generativelanguage.googleapis.com' for consumer 'project_number:813852587440'. [reason: "RATE_LIMIT_EXCEEDED"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+metadata {
+  key: "quota_unit"
+  value: "1/min/{project}/{region}"
+}
+metadata {
+  key: "quota_metric"
+  value: "generativelanguage.googleapis.com/generate_content_requests"
+}
+metadata {
+  key: "quota_location"
+  value: "europe-west1"
+}
+metadata {
+  key: "quota_limit"
+  value: "GenerateContentRequestsPerMinutePerProjectPerRegion"
+}
+metadata {
+  key: "quota_limit_value"
+  value: "0"
+}
+metadata {
+  key: "consumer"
+  value: "projects/813852587440"
+}
+, links {
+  description: "Request a higher quota limit."
+  url: "https://cloud.google.com/docs/quotas/help/request_increase"
+}
+]
+2025-11-29 20:36:16,868 - WARNING - Attempt 2/3 failed for parse_event_details: 429 Quota exceeded for quota metric 'Generate Content API requests per minute' and limit 'GenerateContent request limit per minute for a region' of service 'generativelanguage.googleapis.com' for consumer 'project_number:813852587440'. [reason: "RATE_LIMIT_EXCEEDED"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+metadata {
+  key: "quota_unit"
+  value: "1/min/{project}/{region}"
+}
+metadata {
+  key: "quota_metric"
+  value: "generativelanguage.googleapis.com/generate_content_requests"
+}
+metadata {
+  key: "quota_location"
+  value: "europe-west1"
+}
+metadata {
+  key: "quota_limit"
+  value: "GenerateContentRequestsPerMinutePerProjectPerRegion"
+}
+metadata {
+  key: "quota_limit_value"
+  value: "0"
+}
+metadata {
+  key: "consumer"
+  value: "projects/813852587440"
+}
+, links {
+  description: "Request a higher quota limit."
+  url: "https://cloud.google.com/docs/quotas/help/request_increase"
+}
+]
+2025-11-29 20:36:21,943 - WARNING - Attempt 3/3 failed for parse_event_details: 429 Quota exceeded for quota metric 'Generate Content API requests per minute' and limit 'GenerateContent request limit per minute for a region' of service 'generativelanguage.googleapis.com' for consumer 'project_number:813852587440'. [reason: "RATE_LIMIT_EXCEEDED"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+metadata {
+  key: "quota_unit"
+  value: "1/min/{project}/{region}"
+}
+metadata {
+  key: "quota_metric"
+  value: "generativelanguage.googleapis.com/generate_content_requests"
+}
+metadata {
+  key: "quota_location"
+  value: "europe-west1"
+}
+metadata {
+  key: "quota_limit"
+  value: "GenerateContentRequestsPerMinutePerProjectPerRegion"
+}
+metadata {
+  key: "quota_limit_value"
+  value: "0"
+}
+metadata {
+  key: "consumer"
+  value: "projects/813852587440"
+}
+, links {
+  description: "Request a higher quota limit."
+  url: "https://cloud.google.com/docs/quotas/help/request_increase"
+}
+]
+2025-11-29 20:36:21,943 - ERROR - All 3 attempts failed for parse_event_details.
+2025-11-29 20:36:21,943 - INFO - No events to schedule.
+2025-11-29 20:36:49,630 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-11-29 20:36:49,632 - INFO - Checking for calendar named 'Trading'...
+2025-11-29 20:36:50,546 - INFO - Found existing calendar.
+2025-11-29 20:36:50,546 - INFO - --- Running FTMO Update Check ---
+2025-11-29 20:36:50,710 - INFO - Relevant update found. Parsing details with AI...
+2025-11-29 20:36:51,009 - WARNING - Attempt 1/3 failed for parse_event_details: 429 Quota exceeded for quota metric 'Generate Content API requests per minute' and limit 'GenerateContent request limit per minute for a region' of service 'generativelanguage.googleapis.com' for consumer 'project_number:813852587440'. [reason: "RATE_LIMIT_EXCEEDED"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+metadata {
+  key: "quota_unit"
+  value: "1/min/{project}/{region}"
+}
+metadata {
+  key: "quota_metric"
+  value: "generativelanguage.googleapis.com/generate_content_requests"
+}
+metadata {
+  key: "quota_location"
+  value: "europe-west1"
+}
+metadata {
+  key: "quota_limit"
+  value: "GenerateContentRequestsPerMinutePerProjectPerRegion"
+}
+metadata {
+  key: "quota_limit_value"
+  value: "0"
+}
+metadata {
+  key: "consumer"
+  value: "projects/813852587440"
+}
+, links {
+  description: "Request a higher quota limit."
+  url: "https://cloud.google.com/docs/quotas/help/request_increase"
+}
+]
+2025-11-29 20:36:56,082 - WARNING - Attempt 2/3 failed for parse_event_details: 429 Quota exceeded for quota metric 'Generate Content API requests per minute' and limit 'GenerateContent request limit per minute for a region' of service 'generativelanguage.googleapis.com' for consumer 'project_number:813852587440'. [reason: "RATE_LIMIT_EXCEEDED"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+metadata {
+  key: "quota_unit"
+  value: "1/min/{project}/{region}"
+}
+metadata {
+  key: "quota_metric"
+  value: "generativelanguage.googleapis.com/generate_content_requests"
+}
+metadata {
+  key: "quota_location"
+  value: "europe-west1"
+}
+metadata {
+  key: "quota_limit"
+  value: "GenerateContentRequestsPerMinutePerProjectPerRegion"
+}
+metadata {
+  key: "quota_limit_value"
+  value: "0"
+}
+metadata {
+  key: "consumer"
+  value: "projects/813852587440"
+}
+, links {
+  description: "Request a higher quota limit."
+  url: "https://cloud.google.com/docs/quotas/help/request_increase"
+}
+]
+2025-11-29 20:37:01,155 - WARNING - Attempt 3/3 failed for parse_event_details: 429 Quota exceeded for quota metric 'Generate Content API requests per minute' and limit 'GenerateContent request limit per minute for a region' of service 'generativelanguage.googleapis.com' for consumer 'project_number:813852587440'. [reason: "RATE_LIMIT_EXCEEDED"
+domain: "googleapis.com"
+metadata {
+  key: "service"
+  value: "generativelanguage.googleapis.com"
+}
+metadata {
+  key: "quota_unit"
+  value: "1/min/{project}/{region}"
+}
+metadata {
+  key: "quota_metric"
+  value: "generativelanguage.googleapis.com/generate_content_requests"
+}
+metadata {
+  key: "quota_location"
+  value: "europe-west1"
+}
+metadata {
+  key: "quota_limit"
+  value: "GenerateContentRequestsPerMinutePerProjectPerRegion"
+}
+metadata {
+  key: "quota_limit_value"
+  value: "0"
+}
+metadata {
+  key: "consumer"
+  value: "projects/813852587440"
+}
+, links {
+  description: "Request a higher quota limit."
+  url: "https://cloud.google.com/docs/quotas/help/request_increase"
+}
+]
+2025-11-29 20:37:01,156 - ERROR - All 3 attempts failed for parse_event_details.
+2025-11-29 20:37:01,156 - INFO - No events to schedule.
+2025-11-29 20:41:24,553 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-11-29 20:41:24,555 - INFO - Checking for calendar named 'Trading'...
+2025-11-29 20:41:25,221 - INFO - Found existing calendar.
+2025-11-29 20:41:25,221 - INFO - --- Running FTMO Update Check ---
+2025-11-29 20:41:25,397 - INFO - Relevant update found. Parsing details with AI...
+2025-11-29 20:41:25,397 - INFO - Attempting to parse with model: gemini-pro-latest
+2025-11-29 20:41:42,289 - INFO - AI (gemini-pro-latest) did not find any specific event times in the text.
+2025-11-29 20:41:42,290 - INFO - No events to schedule.
+2025-11-29 20:42:16,552 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-11-29 20:42:16,553 - INFO - Checking for calendar named 'Trading'...
+2025-11-29 20:42:17,190 - INFO - Found existing calendar.
+2025-11-29 20:42:17,190 - INFO - --- Running FTMO Update Check ---
+2025-11-29 20:42:17,402 - INFO - Relevant update found. Parsing details with AI...
+2025-11-29 20:42:17,403 - INFO - Attempting to parse with model: gemini-pro-latest
+2025-11-29 20:42:42,232 - INFO - AI identified 1 event(s) using gemini-pro-latest.
+2025-11-29 20:42:42,232 - INFO - Checking for duplicate events in calendar...
+2025-11-29 20:42:42,362 - INFO - Found new event to schedule: 'cTrader Maintenance/Crypto Market Closure' at 2025-11-08 08:00:00
+2025-11-29 20:42:42,362 - INFO - Skipping past event: 'cTrader Maintenance/Crypto Market Closure' scheduled to end at 2025-11-08 22:00:00+02:00
+2025-11-29 20:42:42,362 - INFO - --- Check Finished ---
+2025-11-29 20:46:16,968 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-11-29 20:46:16,970 - INFO - Checking for calendar named 'Trading'...
+2025-11-29 20:46:17,648 - INFO - Found existing calendar.
+2025-11-29 20:46:17,648 - INFO - --- Running FTMO Update Check ---
+2025-11-29 20:46:17,796 - INFO - Relevant update found. Parsing details with AI...
+2025-11-29 20:46:17,796 - INFO - Attempting to parse with model: gemini-pro-latest
+2025-11-29 20:46:29,058 - INFO - AI (gemini-pro-latest) did not find any specific event times in the text.
+2025-11-29 20:46:29,058 - INFO - No events to schedule.
