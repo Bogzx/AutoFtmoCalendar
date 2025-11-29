@@ -276,3 +276,12 @@ metadata {
 2025-11-29 20:46:17,796 - INFO - Attempting to parse with model: gemini-pro-latest
 2025-11-29 20:46:29,058 - INFO - AI (gemini-pro-latest) did not find any specific event times in the text.
 2025-11-29 20:46:29,058 - INFO - No events to schedule.
+2025-11-29 20:50:37,966 - INFO - "GET /?state=NDOO4sb7rLDXRFtaxzNYSyjVEUths5&code=4/0Ab32j91oTJQPgu-lUO23I87gzwZzIF9LW_bOhQN8i-BdHJSh4js9lzbfio3GV0lmifdq9g&scope=https://www.googleapis.com/auth/calendar HTTP/1.1" 200 65
+2025-11-29 20:50:38,134 - INFO - file_cache is only supported with oauth2client<4.0.0
+2025-11-29 20:50:38,136 - INFO - Checking for calendar named 'Trading'...
+2025-11-29 20:50:38,815 - INFO - Found existing calendar.
+2025-11-29 20:50:38,816 - INFO - --- Running FTMO Update Check ---
+2025-11-29 20:50:39,019 - INFO - Relevant update found. Parsing details with AI...
+2025-11-29 20:50:39,019 - INFO - Attempting to parse with model: gemini-pro-latest
+2025-11-29 20:50:54,741 - INFO - AI (gemini-pro-latest) did not find any specific event times in the text.
+2025-11-29 20:50:54,741 - INFO - No events to schedule.
