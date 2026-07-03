@@ -3,7 +3,9 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      # Loopback-only: the host-level Caddy reverse-proxies calendar.bogdantruta.com
+      # to 127.0.0.1:8133. Do NOT bind 0.0.0.0 or reuse 8080 (other containers use it).
+      - "127.0.0.1:8133:8080"
     env_file:
       - .env # LLM_API_KEY, optional DISCORD_WEBHOOK_URL / TELEGRAM_* vars
     volumes:
