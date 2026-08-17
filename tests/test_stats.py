@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 from ftmo_calendar.stats import StatsStore
 
 DAY1 = datetime(2026, 6, 10, 12, 0, tzinfo=UTC)
@@ -43,6 +45,7 @@ def test_persistence_roundtrip(tmp_path: Path) -> None:
     stats = StatsStore(path)
     stats.record_page_view("alice", now=DAY1)
     stats.record_feed_hit("client-a", now=DAY1)
+    stats.flush()  # writes are debounced; force the pending one out
     reloaded = StatsStore(path)
     today = reloaded.snapshot(now=DAY1)["today"]
     assert today["views"] == 1 and today["visitors"] == 1
@@ -65,6 +68,57 @@ def test_corrupt_file_starts_fresh(tmp_path: Path) -> None:
     stats = StatsStore(path)
     stats.record_page_view("alice", now=DAY1)
     assert stats.snapshot(now=DAY1)["today"]["views"] == 1
+
+
+def test_writes_are_debounced(tmp_path: Path) -> None:
+    """A request loop must not become a disk write per request.
+
+    Serializing and fsync-replacing stats.json on every HTTP hit made the
+    public feed an amplification vector: cheap request, expensive write.
+    """
+    path = tmp_path / "stats.json"
+    stats = StatsStore(path, flush_seconds=3600)
+    # The first write always lands, whatever the platform's monotonic epoch —
+    # so a fresh stats.json exists and an early crash loses nothing.
+    stats.record_page_view("first", now=DAY1)
+    assert path.exists()
+    writes_after_first = path.read_text(encoding="utf-8")
+
+    for i in range(500):
+        stats.record_feed_hit(f"client-{i}", now=DAY1)
+
+    assert path.read_text(encoding="utf-8") == writes_after_first  # nothing hit disk
+    assert stats.snapshot(now=DAY1)["today"]["feed_hits"] == 500  # counts are exact
+    assert path.read_text(encoding="utf-8") != writes_after_first  # snapshot flushed
+
+
+def test_first_write_lands_on_a_freshly_booted_machine(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Debouncing must not depend on the platform's monotonic epoch.
+
+    time.monotonic() counts from boot on Linux, so on a fresh CI runner it can
+    be single digits — which silently swallowed the first write when the
+    debounce compared against a 0.0 seed. On Windows (uptime in the thousands)
+    the same code always flushed. Caught by CI; pinned here.
+    """
+    import ftmo_calendar.stats as stats_mod
+
+    monkeypatch.setattr(stats_mod.time, "monotonic", lambda: 3.2)
+    path = tmp_path / "stats.json"
+    stats = StatsStore(path, flush_seconds=3600)
+    stats.record_page_view("alice", now=DAY1)
+    assert path.exists()
+    assert StatsStore(path).snapshot(now=DAY1)["today"]["views"] == 1
+
+
+def test_flush_persists_pending_counts(tmp_path: Path) -> None:
+    path = tmp_path / "stats.json"
+    stats = StatsStore(path, flush_seconds=3600)
+    stats.record_page_view("a", now=DAY1)
+    stats.record_page_view("b", now=DAY1)  # debounced
+    stats.flush()
+    assert StatsStore(path).snapshot(now=DAY1)["today"]["views"] == 2
 
 
 def test_history_kept_to_30_days(tmp_path: Path) -> None:
